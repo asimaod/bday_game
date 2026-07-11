@@ -1,0 +1,1766 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>HB, bro!</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="icon" href="kotik.png">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@500;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --air:    #FFF6EC;
+    --wall:   #FCEEDD;
+    --wood:   #C79A6B;
+    --fur:    #FFFDF7;
+    --accent: #F39A8B;
+    --green:  #A9D4AE;
+    --text:   #6B5640;
+    --nose:   #F7C5B4;
+    --mint:   #BFEFCF;
+    --blue:   #C2E2FB;
+  }
+
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; padding:0; height:100%; overflow:hidden; background:var(--air); }
+  body{ font-family:'Nunito',sans-serif; color:var(--text); }
+  canvas{ display:block; touch-action:none; }
+
+  #counter{
+    position:fixed; top:16px; left:16px; z-index:20;
+    background:rgba(250,241,226,0.85); color:var(--text);
+    font-family:'Comfortaa',cursive; font-weight:700; font-size:16px;
+    padding:10px 16px; border-radius:999px;
+    border:2px solid rgba(211,168,119,0.55);
+    box-shadow:0 6px 18px rgba(90,70,50,0.16);
+    display:flex; align-items:center; gap:8px;
+    user-select:none; pointer-events:none;
+    backdrop-filter:blur(4px);
+  }
+  #counter .dot{ width:12px; height:12px; border-radius:50%; background:var(--accent);
+                 box-shadow:0 0 8px var(--accent); }
+
+  #hint{
+    position:fixed; bottom:16px; right:16px; z-index:20;
+    background:rgba(250,241,226,0.74); color:var(--text);
+    font-size:13px; font-weight:600; padding:8px 14px; border-radius:14px;
+    border:1px solid rgba(211,168,119,0.4); pointer-events:none; user-select:none;
+    max-width:50vw; line-height:1.4;
+  }
+
+  #letter{
+    position:fixed; inset:0; z-index:40; display:none;
+    align-items:center; justify-content:center;
+    background:rgba(90,70,50,0.34); backdrop-filter:blur(3px);
+    padding:24px;
+  }
+  #letter.show{ display:flex; animation:fadeIn .35s ease; }
+  .letter-card{
+    position:relative; width:min(440px,92vw);
+    background:linear-gradient(180deg,#FFFBF1 0%, #F8ECD3 100%);
+    border:2px solid rgba(211,168,119,0.6); border-radius:22px;
+    padding:34px 30px 28px; text-align:center;
+    box-shadow:0 24px 60px rgba(90,70,50,0.32);
+    transform:translateY(8px) scale(.96); animation:pop .4s cubic-bezier(.2,.9,.3,1.2) forwards;
+  }
+  .letter-card .seal{
+    position:absolute; top:-22px; left:50%; transform:translateX(-50%);
+    width:46px; height:46px; border-radius:50%; background:var(--accent);
+    box-shadow:0 6px 14px rgba(217,123,87,0.5);
+    display:flex; align-items:center; justify-content:center; font-size:22px;
+  }
+  .letter-card h2{
+    font-family:'Comfortaa',cursive; font-weight:700; color:var(--accent);
+    font-size:19px; margin:6px 0 14px;
+  }
+  .letter-card p{ font-size:17px; line-height:1.6; margin:0 0 22px; color:var(--text); }
+  .btn{
+    font-family:'Comfortaa',cursive; font-weight:700; font-size:15px;
+    color:#FFFBF1; background:var(--accent); border:none; cursor:pointer;
+    padding:12px 26px; border-radius:999px;
+    box-shadow:0 8px 18px rgba(217,123,87,0.4); transition:transform .12s ease, filter .12s ease;
+  }
+  .btn:hover{ filter:brightness(1.05); transform:translateY(-1px); }
+  .btn:active{ transform:translateY(1px); }
+
+  #finale{
+    position:fixed; inset:0; z-index:50; display:none;
+    align-items:center; justify-content:center; text-align:center;
+    padding:24px; opacity:0; transition:opacity 1.6s ease;
+    background:radial-gradient(circle at 50% 35%, rgba(250,241,226,0.55), rgba(217,123,87,0.28) 70%, rgba(90,70,50,0.5));
+  }
+  #finale.show{ display:flex; }
+  #finale.visible{ opacity:1; }
+  .finale-card{
+    max-width:min(560px,94vw);
+    background:rgba(255,251,241,0.93); border-radius:28px;
+    padding:40px 34px; border:2px solid rgba(217,123,87,0.45);
+    box-shadow:0 30px 80px rgba(90,70,50,0.38);
+  }
+  .finale-card .cake{ font-size:52px; margin-bottom:6px; }
+  .finale-card h1{
+    font-family:'Comfortaa',cursive; font-weight:700; color:var(--accent);
+    font-size:clamp(28px,6vw,40px); margin:4px 0 16px; line-height:1.15;
+  }
+  .finale-card p{ font-size:17px; line-height:1.65; margin:0; color:var(--text); }
+  .finale-card .age{
+    font-family:'Comfortaa',cursive; font-weight:700; color:var(--wood);
+    font-size:clamp(46px,12vw,72px); line-height:1; margin:10px 0;
+  }
+
+  #confetti{ position:fixed; inset:0; z-index:45; pointer-events:none; display:none; }
+
+  #start{
+    position:fixed; inset:0; z-index:60; display:flex;
+    align-items:center; justify-content:center; text-align:center; padding:24px;
+    background:radial-gradient(circle at 50% 40%, rgba(250,241,226,0.72), rgba(239,220,190,0.86));
+    backdrop-filter:blur(2px); transition:opacity .6s ease;
+  }
+  #start.hide{ opacity:0; pointer-events:none; }
+  .start-card{ max-width:min(460px,92vw); }
+  .start-card .kitty{ font-size:58px; }
+  .start-card h1{
+    font-family:'Comfortaa',cursive; font-weight:700; color:var(--accent);
+    font-size:clamp(34px,9vw,52px); margin:6px 0 4px;
+  }
+  .start-card .sub{ font-size:17px; color:var(--text); margin:0 0 22px; opacity:.85; }
+  .start-card .ctrls{ font-size:13.5px; color:var(--text); opacity:.75; margin-top:18px; line-height:1.6; }
+
+  #joystick{
+    position:fixed; left:22px; bottom:22px; z-index:25;
+    width:130px; height:130px; border-radius:50%;
+    background:rgba(250,241,226,0.5); border:2px solid rgba(211,168,119,0.5);
+    display:none; touch-action:none;
+  }
+  #joystick.on{ display:block; }
+  #joyKnob{
+    position:absolute; left:50%; top:50%; width:58px; height:58px;
+    margin:-29px 0 0 -29px; border-radius:50%;
+    background:rgba(217,123,87,0.85); box-shadow:0 4px 12px rgba(90,70,50,0.3);
+  }
+
+  @keyframes fadeIn{ from{opacity:0} to{opacity:1} }
+  @keyframes pop{ to{ transform:translateY(0) scale(1); } }
+
+  #webglError{
+    position:fixed; inset:0; z-index:90; display:none;
+    align-items:center; justify-content:center; padding:30px; text-align:center;
+    background:var(--air); font-size:18px; color:var(--text);
+  }
+
+  /* ---------- РЕГУЛЯТОР ГРОМКОСТИ (lo-fi) ---------- */
+  #audioCtrl{
+    position:fixed; top:16px; right:16px; z-index:30;
+    display:flex; align-items:center; gap:10px;
+    background:rgba(255,246,236,0.88);
+    border:2px solid rgba(243,154,139,0.45);
+    border-radius:999px; padding:8px 14px;
+    box-shadow:0 6px 18px rgba(120,90,70,0.16);
+    backdrop-filter:blur(4px); user-select:none;
+  }
+  #muteBtn{
+    border:none; background:transparent; cursor:pointer;
+    font-size:20px; line-height:1; padding:0; width:24px; text-align:center;
+  }
+  #volSlider{
+    -webkit-appearance:none; appearance:none; width:96px; height:6px;
+    border-radius:999px; background:rgba(243,154,139,0.3); outline:none; cursor:pointer;
+  }
+  #volSlider::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:16px; height:16px;
+    border-radius:50%; background:var(--accent); box-shadow:0 2px 5px rgba(120,90,70,0.35);
+  }
+  #volSlider::-moz-range-thumb{
+    width:16px; height:16px; border:none; border-radius:50%;
+    background:var(--accent); box-shadow:0 2px 5px rgba(120,90,70,0.35);
+  }
+  @media (max-width:520px){ #volSlider{ width:70px; } }
+
+  /* кнопки в финале — в ряд */
+  .finale-actions{ display:flex; gap:12px; justify-content:center; margin-top:24px; flex-wrap:wrap; }
+  .btn.ghost{
+    color:var(--accent); background:rgba(255,251,241,0.9);
+    border:2px solid var(--accent); box-shadow:0 6px 14px rgba(243,154,139,0.25);
+  }
+</style>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+
+<body>
+  <div id="counter"><span class="dot"></span><span id="counterText">Найдено 0 из 0</span></div>
+  <div id="audioCtrl">
+    <button id="muteBtn" title="Звук вкл/выкл">🔊</button>
+    <input id="volSlider" type="range" min="0" max="100" value="40" aria-label="Громкость">
+  </div>
+  <div id="hint"></div>
+
+  <div id="letter">
+    <div class="letter-card">
+      <div class="seal">✿</div>
+      <h2 id="letterTitle">Записка для Нурперзента</h2>
+      <p id="letterText"></p>
+      <button class="btn" id="letterClose">Дальше</button>
+    </div>
+  </div>
+
+  <canvas id="confetti"></canvas>
+  <div id="finale">
+    <div class="finale-card">
+      <div class="cake">🎂</div>
+      <h1 id="finaleTitle">С днём рождения!</h1>
+      <div class="age" id="finaleAge">22</div>
+      <p id="finaleText"></p>
+      <div class="finale-actions">
+        <button class="btn" id="restartBtn">Сыграть снова ↻</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="start">
+    <div class="start-card">
+      <div class="kitty">🐱</div>
+      <h1 id="startName">Прогулка с Михоном</h1>
+      <p class="sub">Прогулочка по дому в твой день рождения.<br>Найди все записки - каждая с пожеланиями для тебя.</p>
+      <button class="btn" id="startBtn">Гулять с Михоном</button>
+      <div class="ctrls" id="startCtrls"></div>
+    </div>
+  </div>
+
+  <div id="joystick"><div id="joyKnob"></div></div>
+
+  <div id="webglError">Похоже, браузер не поддерживает WebGL. Открой игру в современном браузере (Chrome, Safari, Firefox).</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+const CAT_NAME = 'Михон';
+const AGE = 22;
+
+const NOTES = [
+  { text: 'С самого утра ' + CAT_NAME + ' желает тебе дня, который мурчит от тепла, любви, заботы и радости. Пусть всё начинается с солнечного света в окне, напоминая тебе, что ты SUNLIGHT BABE!', pos: [-8.2, 1.05, -6.0] },
+  { text: 'Пусть все позитивное, что ты задумал, сбывается легко. Чтобы ты собрал себе комп, чтобы все финальные катки доты были вином, чтобы наконец приобрел себе желаемую аркану. Желаю много, много деняк.',                              pos: [ 6.4, 1.30, -5.2] },
+  { text: 'Спасибо, что ты есть. Рядом с тобой всё вокруг становится чуть добрее. Be healthy, тебе так идет улыбка и смех)',                                     pos: [-7.0, 0.55,  5.6] },
+  { text: 'Желаю тебе ярких и запоминающихся дней, верных друзей и сил на всё. У тебя получится. И никогда не сомневайся в этом. Штаты ждут тебя. Пусть ты в скором времени встретишься с теми людьми, кто тебе так дорог.',                                  pos: [-1.6, 1.10, -6.0] },
+  { text: 'Пусть каждый день даже маленькие радости будут напоминать тебе, что жизнь прекрасна',                  pos: [ 1.6, 0.55,  5.6] },
+  { text: 'Ты даришь людям много тепла. Пусть оно щедро возвращается к тебе - с лихвой. Желаю твоим родным и близким крепкого здоровья, и чтобы тебя окружали только хорошие человечки.',                                         pos: [ 8.4, 1.40,  7.85] },
+  { text: 'Самое главное в этой записке простое: тебя очень любят. Помни об этом каждый день. И еще я очень рада, что познакомилась с тобой. Надеюсь наша дружба будет крепкой. Бакытты бол, айналайын <3',                                   pos: [13.0, 0.80, 11.0] },
+];
+
+const FINALE = {
+  title: 'С днём рождения!',
+  text:  'Сегодня тебе ' + AGE + ' - прекрасный возраст для новых историй и приключений. ' +
+         'Пусть этот год будет мягким, как шерсть ' + CAT_NAME + 'а, добрым к тебе и щедрым на радость. '
+};
+
+const C = {
+  air:     0xFFF6EC, // тёплый воздух / фон
+  sky:     0xCFE7FF, // небо снаружи
+  wall:    0xFCEEDD, // стены — светлый тёплый крем-персик
+  wallTop: 0xFFF7EC, // совсем светлая полоса под потолком
+  floor:   0xE8C79C, // тёплый деревянный пол
+  woodLt:  0xCFA877, // светлое дерево мебели
+  wood:    0xB07E50, // тёмное дерево (контрастные ножки/каркас)
+  fur:     0xFFFDF7, // шерсть Михона
+  accent:  0xF39A8B, // коралл — письма, торт, диван
+  pink:    0xFFC3CC, // пастель-розовый
+  peach:   0xFFD8B6, // пастель-персик
+  yellow:  0xFFF0B5, // пастель-жёлтый
+  mint:    0xBFEFCF, // пастель-мята
+  blue:    0xC2E2FB, // пастель-голубой
+  green:   0x8FC79A, // листва растений
+  leaf2:   0xB7DDA9, // светлая листва
+  grass:   0xC3D8AC, // газон
+  text:    0x6B5640, // тёмно-коричневый акцент
+  nose:    0xF7C5B4,
+  glow:    0xFFE39A, // свечение записок
+  eye:     0x4A3B2C,
+  roof:    0xE7A982, // черепица
+  ceiling: 0xFFF6EC, // потолок — светлый
+  cream:   0xFFF6E8, // мягкий кремовый (подушки, простыни)
+  brick:   0xC4694E, // кирпич фасада
+  // праздничные шарики (яркие, как на фото)
+  balR:    0xE23A2E, balB: 0x2E9BE0, balG: 0x49C23A,
+  balO:    0xF08A1E, balY: 0xF6C90E, balW: 0xF2F2F0,
+};
+
+let renderer, scene, camera;
+const clock = new THREE.Clock();
+
+const WORLD = { minX:-23, maxX:23, minZ:-21, maxZ:21 };
+
+function initThree(){
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xBFE0F5);      // голубое небо за куполом
+  scene.fog = new THREE.Fog(0xE0EDF2, 42, 115);      // лёгкая дымка на горизонте
+
+  camera = new THREE.PerspectiveCamera(58, window.innerWidth/window.innerHeight, 0.1, 300);
+
+  renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  document.body.appendChild(renderer.domElement);
+
+  const hemi = new THREE.HemisphereLight(0xFFFAF0, 0xEAD9BE, 1.0);
+  scene.add(hemi);
+
+  const amb = new THREE.AmbientLight(0xFFF7EC, 0.6);
+  scene.add(amb);
+
+  const sun = new THREE.DirectionalLight(0xFFE8C4, 0.9);
+  sun.position.set(16, 26, 12);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  const s = 32;
+  sun.shadow.camera.left = -s; sun.shadow.camera.right = s;
+  sun.shadow.camera.top = s;   sun.shadow.camera.bottom = -s;
+  sun.shadow.camera.near = 1;  sun.shadow.camera.far = 90;
+  sun.shadow.bias = -0.0004;
+  scene.add(sun);
+}
+
+const G = {
+  box:    new THREE.BoxGeometry(1,1,1),
+  sphere: new THREE.SphereGeometry(0.5, 18, 14),
+  cyl:    new THREE.CylinderGeometry(0.5, 0.5, 1, 18),
+  cone:   new THREE.ConeGeometry(0.5, 1, 18),
+};
+
+const matCache = new Map();
+function lambert(color){
+  if(matCache.has(color)) return matCache.get(color);
+  const m = new THREE.MeshLambertMaterial({ color });
+  matCache.set(color, m);
+  return m;
+}
+function emissive(color, glow, intensity){
+  const m = new THREE.MeshLambertMaterial({ color, emissive:glow, emissiveIntensity:intensity });
+  return m;
+}
+
+/* ---------- КИРПИЧНАЯ ТЕКСТУРА ФАСАДА ---------- */
+let brickTex = null;
+function makeBrickTexture(){
+  const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+  const x = c.getContext('2d');
+  x.fillStyle = '#E3D5C0'; x.fillRect(0,0,256,256); // светлый шов
+  const bw = 58, bh = 26, gap = 6;
+  const shades = ['#C4694E','#BA5F45','#CE7458','#B05A42','#C87050'];
+  let k = 0;
+  for(let row = 0; row*(bh+gap) < 256+bh; row++){
+    const off = (row % 2) ? -(bw+gap)/2 : 0;
+    for(let col = -1; col*(bw+gap)+off < 256+bw; col++){
+      x.fillStyle = shades[(k++) % shades.length];
+      x.fillRect(col*(bw+gap)+off, row*(bh+gap), bw, bh);
+    }
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  return t;
+}
+function brickMaterial(w, h){
+  if(!brickTex) brickTex = makeBrickTexture();
+  const t = brickTex.clone(); t.needsUpdate = true;
+  t.repeat.set(Math.max(0.5, w/1.7), Math.max(0.5, h/1.7));
+  return new THREE.MeshLambertMaterial({ map: t });
+}
+
+const colliders = [];
+const wallColliders = [];
+function addCollider(cx, cz, w, d, isWall){
+  const c = { minX:cx-w/2, maxX:cx+w/2, minZ:cz-d/2, maxZ:cz+d/2 };
+  colliders.push(c);
+  if(isWall) wallColliders.push(c);
+}
+
+function box(parent, w,h,d, color, x,y,z, opts={}){
+  const m = new THREE.Mesh(G.box, opts.mat || lambert(color));
+  m.scale.set(w,h,d); m.position.set(x,y,z);
+  m.castShadow = opts.cast !== false; m.receiveShadow = opts.receive !== false;
+  parent.add(m);
+  if(opts.collide) addCollider(x, z, w, d, opts.wall);
+  return m;
+}
+function sph(parent, rx,ry,rz, color, x,y,z, opts={}){
+  const m = new THREE.Mesh(G.sphere, opts.mat || lambert(color));
+  m.scale.set(rx*2, ry*2, rz*2); m.position.set(x,y,z);
+  m.castShadow = opts.cast !== false; m.receiveShadow = opts.receive !== false;
+  parent.add(m);
+  return m;
+}
+function cyl(parent, r,h, color, x,y,z, opts={}){
+  const m = new THREE.Mesh(G.cyl, opts.mat || lambert(color));
+  m.scale.set(r*2, h, r*2); m.position.set(x,y,z);
+  m.castShadow = opts.cast !== false; m.receiveShadow = opts.receive !== false;
+  parent.add(m);
+  return m;
+}
+function cone(parent, r,h, color, x,y,z, opts={}){
+  const m = new THREE.Mesh(G.cone, opts.mat || lambert(color));
+  m.scale.set(r*2, h, r*2); m.position.set(x,y,z);
+  m.castShadow = opts.cast !== false; m.receiveShadow = opts.receive !== false;
+  parent.add(m);
+  return m;
+}
+
+/* ---------- СКРУГЛЁННАЯ МЕБЕЛЬ (без острых углов) ---------- */
+const rboxCache = new Map();
+function rbox(parent, w,h,d, color, x,y,z, opts={}){
+  const r = Math.max(0.02, Math.min(opts.radius ?? 0.14, Math.min(w,h,d)*0.45));
+  const key = w.toFixed(2)+'_'+h.toFixed(2)+'_'+d.toFixed(2)+'_'+r.toFixed(2);
+  let geo = rboxCache.get(key);
+  if(!geo){ geo = new RoundedBoxGeometry(w,h,d, 3, r); rboxCache.set(key, geo); }
+  const m = new THREE.Mesh(geo, opts.mat || lambert(color));
+  m.position.set(x,y,z);
+  m.castShadow = opts.cast !== false; m.receiveShadow = opts.receive !== false;
+  parent.add(m);
+  if(opts.collide) addCollider(x, z, w, d, opts.wall);
+  return m;
+}
+// мягкая напольная подушка-пуф (как в кафе на фото)
+function pouf(parent, x,z, color, size=0.95){
+  rbox(parent, size, 0.22, size, color, x, 0.18, z, { radius:0.12, collide:true });
+  rbox(parent, size*0.78, 0.14, size*0.78, color, x, 0.30, z, { radius:0.1, cast:false });
+}
+// растение в горшке
+function plant(parent, x,z, scale=1, potColor=C.accent){
+  cyl(parent, 0.22*scale, 0.34*scale, potColor, x, 0.17*scale, z, {});
+  cyl(parent, 0.24*scale, 0.06*scale, 0xF2E6D2, x, 0.34*scale, z, {cast:false});
+  sph(parent, 0.34*scale,0.4*scale,0.34*scale, C.green, x, 0.62*scale, z, {});
+  sph(parent, 0.24*scale,0.28*scale,0.24*scale, C.leaf2, x+0.18*scale, 0.72*scale, z-0.1*scale, {cast:false});
+  sph(parent, 0.2*scale,0.24*scale,0.2*scale, C.leaf2, x-0.16*scale, 0.66*scale, z+0.12*scale, {cast:false});
+}
+// настенный кубик-полка с маленьким растением (стиль cat-cafe)
+function wallCube(parent, x,y,z, color){
+  rbox(parent, 0.5,0.5,0.32, color, x,y,z, { radius:0.06, cast:false });
+  rbox(parent, 0.4,0.4,0.18, C.cream, x,y,z+0.07, { radius:0.05, cast:false });
+  cyl(parent, 0.09,0.14, C.woodLt, x,y-0.08,z+0.12, {cast:false});
+  sph(parent, 0.14,0.16,0.14, C.green, x,y+0.06,z+0.12, {cast:false});
+}
+// торшер (высокий) — тёплый свет
+function floorLamp(parent, x,z, shade=C.peach){
+  rbox(parent, 0.34,0.08,0.34, C.wood, x,0.06,z, {radius:0.04});
+  cyl(parent, 0.045,1.55, C.wood, x,0.82,z, {cast:false});
+  const sh = cone(parent, 0.36,0.5, shade, x,1.72,z, {cast:false});
+  sh.material = emissive(shade, 0xFFCB6E, 0.6);
+  warmLight(x,1.6,z, 9, 0.9);
+}
+// настольная лампа — тёплый свет
+function tableLamp(parent, x,y,z, shade=C.yellow){
+  rbox(parent, 0.2,0.07,0.2, C.wood, x,y,z, {radius:0.04, cast:false});
+  cyl(parent, 0.03,0.34, C.wood, x,y+0.2,z, {cast:false});
+  const sh = cone(parent, 0.22,0.3, shade, x,y+0.45,z, {cast:false});
+  sh.material = emissive(shade, 0xFFCB6E, 0.7);
+  warmLight(x,y+0.45,z, 6.5, 0.7);
+}
+
+// связка праздничных шариков, привязанных к полу
+const balloonGroups = [];
+function balloonBunch(parent, x, z, cols){
+  cols = cols || [C.balR, C.balB, C.balG, C.balO, C.balY, C.balW];
+  const g = new THREE.Group();
+  g.position.set(x, 0, z);
+  // грузик/узел на полу
+  cyl(g, 0.09, 0.12, C.text, 0, 0.06, 0, { cast:false });
+  sph(g, 0.07,0.07,0.07, C.accent, 0, 0.14, 0, { cast:false });
+  const tieY = 0.16;
+  // раскладка шариков по небольшому кругу сверху
+  const layout = [
+    [ 0.00, 2.18,  0.00],
+    [-0.34, 2.02,  0.10],
+    [ 0.32, 2.05, -0.08],
+    [-0.14, 1.86,  0.30],
+    [ 0.20, 1.90,  0.26],
+    [ 0.05, 1.74, -0.28],
+  ];
+  for(let i=0;i<cols.length && i<layout.length;i++){
+    const [bx,by,bz] = layout[i];
+    const col = cols[i];
+    // шарик — слегка вытянутая «капля»
+    const ball = sph(g, 0.3,0.3,0.3, col, bx, by, bz, { cast:false });
+    ball.scale.set(1, 1.18, 1);
+    ball.material = emissive(col, col, 0.12); // лёгкое свечение для «глянца»
+    // носик-узелок снизу
+    cone(g, 0.05, 0.1, col, bx, by-0.34, bz, { cast:false });
+    // верёвочка к общему узлу на полу
+    const ax = 0, ay = tieY, az = 0;            // якорь
+    const ex = bx, ey = by-0.40, ez = bz;        // низ шарика
+    const dx = ex-ax, dy = ey-ay, dz = ez-az;
+    const len = Math.hypot(dx, dy, dz);
+    const str = cyl(g, 0.006, len, 0xEFE6D6, (ax+ex)/2, (ay+ey)/2, (az+ez)/2, { cast:false });
+    str.quaternion.setFromUnitVectors(
+      new THREE.Vector3(0,1,0),
+      new THREE.Vector3(dx,dy,dz).normalize()
+    );
+  }
+  g.userData.phase = Math.random()*Math.PI*2;
+  parent.add(g);
+  balloonGroups.push(g);
+  return g;
+}
+
+const house = new THREE.Group();
+const WALL_H = 2.6, WALL_T = 0.2;
+const RIDGE  = 1.9;
+
+let curtainIdx = 0;
+const CURTAIN_COLS = [0xFFC3CC, 0xFFD8B6, 0xBFEFCF, 0xC2E2FB];
+
+function buildWall(ax,az,bx,bz, gaps=[], exterior=false){
+  const sillH = 0.95, winTop = 1.9, color = C.wall;
+  const horiz = Math.abs(bx-ax) > Math.abs(bz-az);
+  const t0 = horiz ? Math.min(ax,bx) : Math.min(az,bz);
+  const t1 = horiz ? Math.max(ax,bx) : Math.max(az,bz);
+  const f  = horiz ? az : ax;
+  const out = f >= 0 ? 1 : -1; // наружная сторона (от центра дома)
+  const gs = gaps.slice().sort((p,q)=>p.at-q.at);
+
+  // кирпичная облицовка снаружи
+  const BRICK_T = 0.07;
+  function brickPanel(cAlong, cy, len, h){
+    if(!exterior || len <= 0.05 || h <= 0.05) return;
+    const off = f + out*(WALL_T/2 + BRICK_T/2);
+    const mat = brickMaterial(len, h);
+    if(horiz) box(house, len, h, BRICK_T, 0, cAlong, cy, off, { mat, cast:false, receive:false });
+    else      box(house, BRICK_T, h, len, 0, off, cy, cAlong, { mat, cast:false, receive:false });
+  }
+
+  let cursor = t0; const segs = [];
+  for(const g of gs){
+    const g0 = g.at-g.w/2, g1 = g.at+g.w/2;
+    if(g0 > cursor) segs.push([cursor, g0]);
+    cursor = Math.max(cursor, g1);
+  }
+  if(cursor < t1) segs.push([cursor, t1]);
+  for(const [s0,s1] of segs){
+    const len = s1-s0; if(len <= 0.01) continue;
+    const cx = horiz ? (s0+s1)/2 : f;
+    const cz = horiz ? f : (s0+s1)/2;
+    const w  = horiz ? len : WALL_T;
+    const d  = horiz ? WALL_T : len;
+    box(house, w, WALL_H, d, color, cx, WALL_H/2, cz, { collide:true, wall:true });
+    brickPanel((s0+s1)/2, WALL_H/2, len, WALL_H);
+  }
+
+  for(const g of gs){
+    if(g.type !== 'window') continue;
+    const cx = horiz ? g.at : f;
+    const cz = horiz ? f : g.at;
+    const w  = horiz ? g.w : WALL_T;
+    const d  = horiz ? WALL_T : g.w;
+    box(house, w, sillH, d, color, cx, sillH/2, cz, { collide:true, wall:true });
+    box(house, w, WALL_H-winTop, d, color, cx, (winTop+WALL_H)/2, cz, { cast:false });
+    brickPanel(g.at, sillH/2, g.w, sillH);
+    brickPanel(g.at, (winTop+WALL_H)/2, g.w, WALL_H-winTop);
+    const midY = (sillH+winTop)/2, fh = winTop-sillH;
+    if(horiz){
+      box(house, 0.07, fh, WALL_T+0.02, C.wood, cx, midY, cz, { cast:false });
+      box(house, g.w,  0.07, WALL_T+0.02, C.wood, cx, midY, cz, { cast:false });
+    } else {
+      box(house, WALL_T+0.02, fh, 0.07, C.wood, cx, midY, cz, { cast:false });
+      box(house, WALL_T+0.02, 0.07, g.w, C.wood, cx, midY, cz, { cast:false });
+    }
+
+    // ---- шторы внутри комнаты ----
+    const cc = CURTAIN_COLS[curtainIdx++ % CURTAIN_COLS.length];
+    const inn = f - out*(WALL_T/2 + 0.1);
+    const rodY = winTop + 0.14, panelH = 1.28, panelY = winTop - panelH/2 + 0.06;
+    if(horiz){
+      const rod = cyl(house, 0.025, g.w+0.36, C.wood, g.at, rodY, inn, { cast:false });
+      rod.rotation.z = Math.PI/2;
+      rbox(house, 0.4, panelH, 0.08, cc, g.at-(g.w/2-0.17), panelY, inn, { radius:0.05, cast:false });
+      rbox(house, 0.4, panelH, 0.08, cc, g.at+(g.w/2-0.17), panelY, inn, { radius:0.05, cast:false });
+      rbox(house, 0.46, 0.16, 0.1, cc, g.at-(g.w/2-0.17), rodY-0.1, inn, { radius:0.05, cast:false });
+      rbox(house, 0.46, 0.16, 0.1, cc, g.at+(g.w/2-0.17), rodY-0.1, inn, { radius:0.05, cast:false });
+    } else {
+      const rod = cyl(house, 0.025, g.w+0.36, C.wood, inn, rodY, g.at, { cast:false });
+      rod.rotation.x = Math.PI/2;
+      rbox(house, 0.08, panelH, 0.4, cc, inn, panelY, g.at-(g.w/2-0.17), { radius:0.05, cast:false });
+      rbox(house, 0.08, panelH, 0.4, cc, inn, panelY, g.at+(g.w/2-0.17), { radius:0.05, cast:false });
+      rbox(house, 0.1, 0.16, 0.46, cc, inn, rodY-0.1, g.at-(g.w/2-0.17), { radius:0.05, cast:false });
+      rbox(house, 0.1, 0.16, 0.46, cc, inn, rodY-0.1, g.at+(g.w/2-0.17), { radius:0.05, cast:false });
+    }
+  }
+}
+
+function buildHouse(){
+  box(house, 20, 0.1, 16, C.floor, 0, 0.0, 0, { cast:false });
+
+  // внешние стены — кирпичные снаружи
+  buildWall(-10,-8, 10,-8, [ {at:-6.5,w:1.8,type:'window'}, {at:0,w:2.0,type:'window'}, {at:6.5,w:1.8,type:'window'} ], true);
+  buildWall(-10,8, 10,8, [ {at:-6.5,w:1.6,type:'window'}, {at:0,w:2.0,type:'door'}, {at:6.5,w:1.6,type:'window'} ], true);
+  buildWall(-10,-8, -10,8, [ {at:-4,w:1.6,type:'window'}, {at:4,w:1.6,type:'window'} ], true);
+  buildWall(10,-8, 10,8, [ {at:-4,w:1.6,type:'door'}, {at:4,w:1.6,type:'window'} ], true);
+
+  // внутренние стены — без кирпича
+  buildWall(-3.5,-8, -3.5,8, [ {at:-4,w:1.6,type:'door'}, {at:4,w:1.6,type:'door'} ]);
+  buildWall( 3.5,-8,  3.5,8, [ {at:-4,w:1.6,type:'door'}, {at:4,w:1.6,type:'door'} ]);
+  buildWall(-10,0, 10,0,     [ {at:-6.75,w:1.6,type:'door'}, {at:0,w:1.6,type:'door'}, {at:6.75,w:1.6,type:'door'} ]);
+
+  // кирпичные угловые колонны
+  for(const sx of [-1,1]) for(const sz of [-1,1]){
+    box(house, 0.5, WALL_H, 0.5, 0, sx*10, WALL_H/2, sz*8, { mat: brickMaterial(0.5, WALL_H), cast:false });
+  }
+
+  box(house, 20.4, 0.12, 16.4, C.ceiling, 0, WALL_H + 0.06, 0, { cast:false, receive:false });
+
+  buildRooms();
+  scene.add(house);
+}
+
+function buildRoof(){
+  const roof = new THREE.Group();
+  const top    = WALL_H;
+  const overZ  = 0.7;
+  const overX  = 0.7;
+  const halfZ  = 8 + overZ;
+  const slope  = Math.hypot(halfZ, RIDGE);
+  const ang    = Math.atan2(RIDGE, halfZ);
+  const lenX   = 20 + overX*2;
+  const roofMat = lambert(C.roof);
+
+  const sPlus = new THREE.Mesh(G.box, roofMat);
+  sPlus.scale.set(lenX, 0.18, slope);
+  sPlus.position.set(0, top + RIDGE/2, halfZ/2);
+  sPlus.rotation.x = ang;
+  sPlus.castShadow = true; sPlus.receiveShadow = false;
+  roof.add(sPlus);
+
+  const sMinus = new THREE.Mesh(G.box, roofMat);
+  sMinus.scale.set(lenX, 0.18, slope);
+  sMinus.position.set(0, top + RIDGE/2, -halfZ/2);
+  sMinus.rotation.x = -ang;
+  sMinus.castShadow = true; sMinus.receiveShadow = false;
+  roof.add(sMinus);
+
+  box(roof, lenX, 0.16, 0.22, 0xC98B5E, 0, top + RIDGE + 0.02, 0, { cast:false });
+
+  // фронтоны — тоже кирпичные
+  if(!brickTex) brickTex = makeBrickTexture();
+  const gTex = brickTex.clone(); gTex.needsUpdate = true; gTex.repeat.set(1/1.7, 1/1.7);
+  const gableMat = new THREE.MeshLambertMaterial({ map:gTex, side:THREE.DoubleSide });
+  function gable(xPos){
+    const sh = new THREE.Shape();
+    sh.moveTo(-8, top); sh.lineTo(8, top); sh.lineTo(0, top + RIDGE); sh.closePath();
+    const g = new THREE.ShapeGeometry(sh);
+    const m = new THREE.Mesh(g, gableMat);
+    m.rotation.y = Math.PI/2;
+    m.position.x = xPos;
+    m.castShadow = false; m.receiveShadow = false;
+    roof.add(m);
+  }
+  gable(10); gable(-10);
+
+  scene.add(roof);
+}
+
+function rug(cx,cz,w,d,color){ box(house, w, 0.04, d, color, cx, 0.07, cz, { cast:false }); }
+function ceilingLamp(cx,cz){
+  cyl(house, 0.02, 0.5, C.text, cx, WALL_H-0.25, cz, { cast:false });
+  const bulb = sph(house, 0.16,0.16,0.16, 0xFFE9B0, cx, WALL_H-0.5, cz, { cast:false });
+  bulb.material = emissive(0xFFE9B0, 0xFFCB6E, 0.95);
+}
+
+function buildRooms(){
+  /* ===================== СПАЛЬНЯ  (x[-10..-3.5], z[-8..0]) ===================== */
+  rug(-6.7,-4, 4.6, 5.0, C.mint);
+  // кровать со скруглённым каркасом
+  rbox(house, 3.0, 0.42, 3.9, C.woodLt, -8.0, 0.28, -4.4, { radius:0.12, collide:true });
+  rbox(house, 2.7, 0.26, 3.5, C.cream,  -8.0, 0.56, -4.3, { radius:0.13, cast:false });
+  rbox(house, 2.7, 0.5, 0.5,  C.woodLt, -8.0, 0.5, -6.15, { radius:0.16, cast:false }); // изголовье
+  rbox(house, 1.4, 0.22, 0.85, C.pink,  -8.0, 0.72, -5.7, { radius:0.12, cast:false }); // подушка
+  rbox(house, 2.5, 0.16, 1.7, C.accent, -8.0, 0.68, -3.4, { radius:0.12, cast:false }); // плед
+  // тумбочка + настольная лампа (тёплый свет)
+  rbox(house, 0.9, 0.7, 0.8, C.woodLt, -5.55, 0.35, -6.3, { radius:0.1, collide:true });
+  tableLamp(house, -5.55, 0.72, -6.3, C.peach);
+  // комод
+  rbox(house, 1.5, 1.0, 0.7, C.blue, -9.2, 0.5, -1.4, { radius:0.1, collide:true });
+  floorLamp(house, -9.3, -6.6, C.peach);
+  plant(house, -4.3, -1.0, 1.0, C.pink);
+  wallCube(house, -9.86, 1.7, -3.0, C.mint);
+  wallCube(house, -9.86, 1.7, -5.0, C.peach);
+  balloonBunch(house, -4.3, -7.3);
+  ceilingLamp(-6.7,-4);
+
+  /* ===================== ГОСТИНАЯ (x[-3.5..3.5], z[-8..0]) ===================== */
+  rug(0,-4.2, 4.8, 4.4, C.accent);
+  // диван (скруглённый, коралловый)
+  rbox(house, 3.4, 0.45, 1.2, C.accent, -1.5, 0.32, -6.3, { radius:0.16, collide:true });
+  rbox(house, 3.4, 0.7, 0.4, C.accent, -1.5, 0.7, -6.85, { radius:0.18, cast:false });   // спинка
+  rbox(house, 0.4, 0.6, 1.2, C.accent, -3.1, 0.6, -6.3, { radius:0.16, cast:false });    // подлокотник
+  rbox(house, 0.4, 0.6, 1.2, C.accent,  0.1, 0.6, -6.3, { radius:0.16, cast:false });
+  rbox(house, 1.3, 0.22, 0.9, C.pink, -2.1, 0.5, -6.2, { radius:0.12, cast:false });     // подушки
+  rbox(house, 1.3, 0.22, 0.9, C.yellow,-0.7, 0.5, -6.2, { radius:0.12, cast:false });
+  // круглый журнальный столик
+  cyl(house, 0.55, 0.36, C.woodLt, -1.2, 0.18, -4.3, { collide:true });
+  cyl(house, 0.55, 0.06, C.cream, -1.2, 0.37, -4.3, { cast:false });
+  plant(house, -1.2, -4.3, 0.55, C.mint);
+  // кресло-мешок (мятное)
+  sph(house, 0.55,0.5,0.55, C.mint, 1.5, 0.42, -2.2, { collide:true });
+  sph(house, 0.5,0.3,0.5, C.mint, 1.5, 0.66, -2.2, { cast:false });
+  // тумба-ТВ
+  rbox(house, 2.2, 0.5, 0.5, C.woodLt, 1.6, 0.25, -7.45, { radius:0.08, collide:true });
+  rbox(house, 1.9, 1.05, 0.12, C.text, 1.6, 1.05, -7.55, { radius:0.06, cast:false });
+  rbox(house, 1.7, 0.85, 0.06, C.blue, 1.6, 1.05, -7.49, { radius:0.04, cast:false });
+  floorLamp(house, 2.9, -6.7, C.yellow);
+  wallCube(house, 0, 1.8, -7.86, C.peach);
+  balloonBunch(house, 0.6, -3.4);
+  ceilingLamp(0,-4);
+
+  /* ===================== КУХНЯ / CAT CAFÉ (x[3.5..10], z[-8..0]) ===================== */
+  rug(6.7,-4, 4.8, 5.0, C.peach);
+  // длинная тумба-стойка вдоль северной стены
+  rbox(house, 5.6, 0.9, 0.7, C.woodLt, 6.7, 0.45, -7.4, { radius:0.08, collide:true });
+  rbox(house, 5.7, 0.12, 0.78, C.cream, 6.7, 0.96, -7.4, { radius:0.05, cast:false });
+  // кексики на стойке (cat-café деталь)
+  const cupCols = [C.pink, C.accent, C.yellow, C.mint];
+  for(let i=0;i<4;i++){
+    const cx = 5.2 + i*1.0;
+    cyl(house, 0.12,0.18, C.cream, cx, 1.11, -7.4, {cast:false});
+    sph(house, 0.14,0.13,0.14, cupCols[i], cx, 1.26, -7.4, {cast:false});
+    sph(house, 0.04,0.04,0.04, C.accent, cx, 1.36, -7.4, {cast:false});
+  }
+  // меню-табличка "Cat Café"
+  const menu = new THREE.Mesh(new THREE.PlaneGeometry(1.3,0.8),
+    new THREE.MeshBasicMaterial({ map: makeTextTexture('Cat Café', '#3a2f25', '#FFE8C4') }));
+  menu.position.set(3.62, 1.7, -5.6); menu.rotation.y = Math.PI/2; house.add(menu);
+  // обеденный столик + кексик + (над ним парит записка)
+  rbox(house, 1.6, 0.1, 1.2, C.cream, 6.4, 0.86, -5.2, { radius:0.06, collide:true });
+  cyl(house, 0.07,0.82, C.wood, 5.75,0.41,-5.2,{cast:false});
+  cyl(house, 0.07,0.82, C.wood, 7.05,0.41,-5.2,{cast:false});
+  cyl(house, 0.13,0.16, C.cream, 6.4, 0.99, -5.2, {cast:false});
+  sph(house, 0.15,0.14,0.15, C.pink, 6.4, 1.15, -5.2, {cast:false});
+  // мягкие пуфы у столика
+  pouf(house, 5.6, -4.0, C.mint, 0.7);
+  pouf(house, 7.2, -4.0, C.blue, 0.7);
+  // холодильник (скруглённый, голубой)
+  rbox(house, 0.9, 1.7, 0.8, C.blue, 9.3, 0.85, -7.2, { radius:0.1, collide:true });
+  rbox(house, 0.12,0.4,0.08, C.cream, 8.86, 1.1, -6.78, { radius:0.04, cast:false });
+  // миска Михона
+  cyl(house, 0.26,0.12, C.accent, 8.6,0.06,-4.0,{cast:false});
+  cyl(house, 0.2,0.05, C.cream, 8.6,0.13,-4.0,{cast:false});
+  plant(house, 4.2, -1.0, 1.0, C.mint);
+  warmLight(6.7, 1.8, -5.0, 10, 0.7);
+  balloonBunch(house, 4.3, -6.8, [C.balB, C.balY, C.balR, C.balG, C.balO]);
+  ceilingLamp(6.7,-4.5);
+
+  /* ===================== ДЕТСКАЯ (x[-10..-3.5], z[0..8]) ===================== */
+  rug(-6.8,5.2, 4.8, 4.4, C.blue);
+  // детская кроватка
+  rbox(house, 2.4, 0.5, 1.7, C.woodLt, -8.2, 0.32, 2.4, { radius:0.1, collide:true });
+  rbox(house, 2.2, 0.24, 1.5, C.cream, -8.2, 0.6, 2.4, { radius:0.12, cast:false });
+  rbox(house, 0.9, 0.2, 0.55, C.pink, -8.2, 0.78, 1.7, { radius:0.1, cast:false });
+  // ящик с игрушками
+  rbox(house, 1.3, 0.65, 0.85, C.yellow, -5.4, 0.32, 6.6, { radius:0.1, collide:true });
+  // напольные подушки + игрушки (над ковром парит записка)
+  pouf(house, -7.4, 5.4, C.pink, 0.85);
+  pouf(house, -6.0, 5.4, C.mint, 0.7);
+  sph(house, 0.28,0.28,0.28, C.accent, -5.5, 0.28, 4.6, { });   // мячик
+  rbox(house, 0.35,0.35,0.35, C.mint, -6.9, 0.18, 6.6, {radius:0.06}); // кубики
+  rbox(house, 0.3,0.3,0.3, C.yellow, -6.5, 0.16, 6.3, {radius:0.05});
+  floorLamp(house, -9.3, 6.6, C.pink);
+  plant(house, -4.3, 6.7, 0.95, C.blue);
+  wallCube(house, -9.86, 1.7, 4.6, C.yellow);
+  balloonBunch(house, -4.0, 2.0, [C.balG, C.balO, C.balB, C.balY, C.balR]);
+  ceilingLamp(-6.8,4.0);
+
+  /* ===================== ВАННАЯ (x[-3.5..3.5], z[0..8]) ===================== */
+  rug(0,4.6, 3.2, 2.6, C.mint);
+  // ванна (скруглённая) — в дальнем левом углу, не загораживает дверь в сад
+  rbox(house, 1.7, 0.62, 1.3, C.cream, -2.35, 0.38, 6.7, { radius:0.26, collide:true });
+  rbox(house, 1.4, 0.32, 0.95, C.blue, -2.35, 0.48, 6.7, { radius:0.18, cast:false });
+  // раковина-тумба + круглое зеркало
+  rbox(house, 0.9, 0.8, 0.55, C.woodLt, 2.4, 0.4, 7.5, { radius:0.08, collide:true });
+  cyl(house, 0.26,0.14, C.cream, 2.4,0.85,7.5,{cast:false});
+  cyl(house, 0.3,0.06, C.blue, 2.4,0.78,7.5,{cast:false});
+  cyl(house, 0.32,0.05, 0xDCEFF4, 2.4,1.55,7.86,{cast:false}); // круглое зеркало (диск)
+  // коврик под записку
+  pouf(house, 1.6, 5.6, C.peach, 0.6);
+  plant(house, -2.9, 6.7, 0.8, C.mint);
+  warmLight(0, 1.8, 5.4, 8, 0.5);
+  ceilingLamp(0,4.0);
+
+  /* ===================== ТУАЛЕТ (x[3.5..10], z[0..8]) ===================== */
+  rug(6.7,5.0, 2.6, 2.8, C.accent);
+  rbox(house, 0.7, 0.55, 0.8, C.cream, 5.3, 0.28, 7.3, { radius:0.18, collide:true });
+  rbox(house, 0.78, 0.7, 0.28, C.cream, 5.3, 0.6, 7.78, { radius:0.16, cast:false });
+  // шкафчик с полочкой (на ней парит записка)
+  rbox(house, 0.7, 0.7, 0.5, C.woodLt, 9.0, 0.35, 7.5, { radius:0.08, collide:true });
+  rbox(house, 1.4, 0.1, 0.32, C.woodLt, 8.4, 1.2, 7.84, { radius:0.04, cast:false });
+  rbox(house, 0.22,0.3,0.06, C.peach, 8.0, 1.4, 7.84, {radius:0.04, cast:false}); // полотенце
+  plant(house, 4.3, 6.8, 0.75, C.pink);
+  ceilingLamp(6.7,4.0);
+}
+
+let roomLightCount = 0;
+function warmLight(x,y,z, range=11, intensity=0.7, color=0xFFCB80){
+  if(roomLightCount >= 8) return; // ограничение ради fps
+  roomLightCount++;
+  const p = new THREE.PointLight(color, intensity, range, 2);
+  p.position.set(x,y,z);
+  scene.add(p);
+}
+function addRoomLight(x,y,z){ warmLight(x,y,z, 11, 0.55); }
+
+/* ---------- НЕБО, СОЛНЦЕ, ОБЛАКА ---------- */
+const clouds = [];
+function buildSky(){
+  // градиентный купол
+  const c = document.createElement('canvas'); c.width = 16; c.height = 256;
+  const x = c.getContext('2d');
+  const gr = x.createLinearGradient(0,0,0,256);
+  gr.addColorStop(0.0, '#63B4EC');
+  gr.addColorStop(0.5, '#A6D5F4');
+  gr.addColorStop(1.0, '#F4EFDD');
+  x.fillStyle = gr; x.fillRect(0,0,16,256);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const dome = new THREE.Mesh(
+    new THREE.SphereGeometry(130, 24, 14),
+    new THREE.MeshBasicMaterial({ map:t, side:THREE.BackSide, fog:false, depthWrite:false })
+  );
+  dome.position.y = -6;
+  scene.add(dome);
+
+  // солнце с мягким ореолом
+  const sunBall = new THREE.Mesh(G.sphere, new THREE.MeshBasicMaterial({ color:0xFFE27A, fog:false }));
+  sunBall.scale.setScalar(13); sunBall.position.set(60, 58, 42); scene.add(sunBall);
+  const halo = new THREE.Mesh(G.sphere, new THREE.MeshBasicMaterial({ color:0xFFF4C0, transparent:true, opacity:0.35, fog:false, depthWrite:false }));
+  halo.scale.setScalar(20); halo.position.copy(sunBall.position); scene.add(halo);
+
+  // пушистые облака
+  const cloudMat = new THREE.MeshLambertMaterial({ color:0xFFFFFF, fog:false });
+  const spots = [[-32,20,-40],[26,24,-48],[46,19,12],[-42,22,28],[10,26,46],[-12,23,-52]];
+  for(const [cx,cy,cz] of spots){
+    const g = new THREE.Group();
+    sph(g, 2.6,1.5,1.7, 0xFFFFFF, 0,0,0, { mat:cloudMat, cast:false, receive:false });
+    sph(g, 1.8,1.1,1.3, 0xFFFFFF, 2.1,0.3,0.4, { mat:cloudMat, cast:false, receive:false });
+    sph(g, 1.6,1.0,1.2, 0xFFFFFF, -1.9,0.2,-0.3, { mat:cloudMat, cast:false, receive:false });
+    g.position.set(cx,cy,cz);
+    scene.add(g);
+    clouds.push({ g, x0:cx, sp: 0.1 + Math.random()*0.15 });
+  }
+}
+
+/* ---------- ТРАВА И ПОЛЕВЫЕ ЦВЕТЫ ---------- */
+function grassAndFlowers(parent){
+  const rng = (a,b)=>a + Math.random()*(b-a);
+  // пучки травы
+  let placed = 0, guard = 0;
+  while(placed < 85 && guard < 700){
+    guard++;
+    const x = rng(-22.5,22.5), z = rng(-20.5,20.5);
+    if(Math.abs(x) < 11.8 && Math.abs(z) < 9.8) continue; // не в доме
+    const s = rng(0.5,1);
+    const gc = Math.random() < 0.5 ? 0xA8CC8F : 0x93BD7C;
+    cone(parent, 0.07*s, 0.3*s, gc, x, 0.15*s, z, { cast:false, receive:false });
+    cone(parent, 0.05*s, 0.22*s, gc, x+0.1, 0.11*s, z+0.07, { cast:false, receive:false });
+    placed++;
+  }
+  // полевые цветы с лепестками
+  const petals = [0xF39A8B, 0xFFD27A, 0xC2A8E8, 0xFF9EC0, 0xFFF0B5, 0x9BD4F5];
+  for(let i=0;i<26;i++){
+    let x=16, z=14, g2=0;
+    do{ x = rng(-22,22); z = rng(-20,20); g2++; }while(Math.abs(x) < 12 && Math.abs(z) < 10 && g2 < 60);
+    const col = petals[i % petals.length];
+    cyl(parent, 0.02, 0.34, 0x7FA866, x, 0.17, z, { cast:false });
+    for(let p=0;p<5;p++){
+      const a = p/5*Math.PI*2;
+      sph(parent, 0.05,0.03,0.05, col, x+Math.cos(a)*0.07, 0.37, z+Math.sin(a)*0.07, { cast:false });
+    }
+    sph(parent, 0.045,0.045,0.045, 0xFFE58A, x, 0.385, z, { cast:false });
+  }
+}
+
+/* ---------- РАЗНОЦВЕТНЫЕ БАБОЧКИ ---------- */
+const butterflies = [];
+function makeButterflies(){
+  const cols = [0xFF7FA5, 0x6FC3FF, 0xFFD05A, 0xB08CFF, 0x7FE3A8, 0xFF9A5C, 0xFF6B6B];
+  const wingGeo = new THREE.PlaneGeometry(0.26, 0.34);
+  for(let i=0;i<7;i++){
+    const rx = 2 + Math.random()*3, rz = 2 + Math.random()*3;
+    let cx = 17, cz = 14, g2 = 0;
+    do{ cx = -19 + Math.random()*38; cz = -17 + Math.random()*34; g2++; }
+    while(Math.abs(cx) < 12.5 + rx && Math.abs(cz) < 10.5 + rz && g2 < 90);
+    const g = new THREE.Group();
+    const mat = new THREE.MeshBasicMaterial({ color: cols[i % cols.length], side: THREE.DoubleSide });
+    const L = new THREE.Group(), R = new THREE.Group();
+    const wl = new THREE.Mesh(wingGeo, mat); wl.rotation.x = -Math.PI/2; wl.position.x = -0.14;
+    const wr = new THREE.Mesh(wingGeo, mat); wr.rotation.x = -Math.PI/2; wr.position.x =  0.14;
+    L.add(wl); R.add(wr); g.add(L); g.add(R);
+    const body = new THREE.Mesh(G.cyl, lambert(0x6B5640));
+    body.scale.set(0.05, 0.24, 0.05); body.rotation.x = Math.PI/2;
+    g.add(body);
+    scene.add(g);
+    butterflies.push({
+      g, L, R, cx, cz, rx, rz,
+      h: 1.0 + Math.random()*1.2, sp: 0.35 + Math.random()*0.45,
+      ph: Math.random()*Math.PI*2, fl: 9 + Math.random()*4
+    });
+  }
+}
+function updateButterflies(t){
+  for(const b of butterflies){
+    const a = t*b.sp + b.ph;
+    const x = b.cx + Math.cos(a)*b.rx;
+    const z = b.cz + Math.sin(a*1.3)*b.rz;
+    const y = b.h + Math.sin(t*1.7 + b.ph)*0.3;
+    const nx = b.cx + Math.cos(a+0.06)*b.rx;
+    const nz = b.cz + Math.sin((a+0.06)*1.3)*b.rz;
+    b.g.position.set(x, y, z);
+    b.g.rotation.y = Math.atan2(nx-x, nz-z);
+    const flap = Math.sin(t*b.fl)*0.95;
+    b.L.rotation.z =  flap;
+    b.R.rotation.z = -flap;
+  }
+}
+
+/* ---------- СВЕТЛЯЧКИ ВО ДВОРЕ ---------- */
+const fireflies = [];
+function makeFireflies(){
+  for(let i=0;i<16;i++){
+    let x = 15, z = 13, g2 = 0;
+    do{ x = -21 + Math.random()*42; z = -19 + Math.random()*38; g2++; }
+    while(Math.abs(x) < 13.5 && Math.abs(z) < 11.5 && g2 < 60);
+    const m = new THREE.Mesh(G.sphere,
+      new THREE.MeshBasicMaterial({ color:0xFFF2A0, transparent:true, opacity:0.9 }));
+    m.scale.setScalar(0.08);
+    m.position.set(x, 0.8, z);
+    scene.add(m);
+    fireflies.push({ m, x, z, seed: Math.random()*Math.PI*2 });
+  }
+}
+function updateFireflies(t){
+  for(const f of fireflies){
+    const s = f.seed;
+    f.m.position.set(
+      f.x + Math.sin(t*0.5 + s)*1.1 + Math.sin(t*1.3 + s*2)*0.3,
+      0.85 + Math.sin(t*0.8 + s)*0.4,
+      f.z + Math.cos(t*0.45 + s)*1.1
+    );
+    const p = 0.35 + 0.65*Math.abs(Math.sin(t*1.6 + s*3));
+    f.m.material.opacity = p;
+    f.m.scale.setScalar(0.05 + 0.06*p);
+  }
+}
+
+function buildGarden(){
+  const garden = new THREE.Group();
+
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(120,120), lambert(C.grass));
+  ground.rotation.x = -Math.PI/2; ground.position.y = -0.02;
+  ground.receiveShadow = true;
+  garden.add(ground);
+
+  box(garden, 2.2, 0.06, 10, C.floor, 0, 0.0, 13.5, { cast:false });
+  box(garden, 10, 0.06, 2.0, C.floor, 15.5, 0.0, -4, { cast:false });
+
+  flowerBed(garden, -7, 12);
+  flowerBed(garden, 8, -12);
+
+  tree(garden, 13.5, 13);
+  tree(garden, -14, -10);
+  tree(garden, 16, 6);
+  bush(garden, -12, 13);
+  bush(garden, 4, 14);
+  bush(garden, -16, 4);
+  bush(garden, 12, -10);
+
+  rbox(garden, 2.0, 0.14, 0.6, C.woodLt, -9, 0.5, -6, { radius:0.06, collide:true });
+  rbox(garden, 2.0, 0.55, 0.12, C.woodLt, -9, 0.78, -6.27, { radius:0.06, cast:false });
+  cyl(garden, 0.06,0.5, C.wood, -9.8,0.25,-6,{cast:false});
+  cyl(garden, 0.06,0.5, C.wood, -8.2,0.25,-6,{cast:false});
+
+  // уютный уголок под деревом, где парит последняя записка
+  rbox(garden, 1.1, 0.12, 1.1, C.cream, 12.4, 0.07, 11.0, { radius:0.06, cast:false });
+  pouf(garden, 13.4, 11.2, C.pink, 0.8);
+  pouf(garden, 12.4, 12.0, C.mint, 0.7);
+  plant(garden, 11.0, 9.6, 1.1, C.peach);
+  floorLamp(garden, 14.6, 9.4, C.yellow);
+
+  grassAndFlowers(garden);
+
+  buildFence(garden);
+  scene.add(garden);
+}
+
+function flowerBed(parent, cx, cz){
+  cyl(parent, 1.4, 0.12, 0x7C6648, cx, 0.05, cz, { cast:false });
+  const colors = [C.accent, C.nose, 0xFFD27A, 0xFBEFD6, C.accent];
+  for(let i=0;i<7;i++){
+    const a = (i/7)*Math.PI*2 + (cx%1);
+    const r = 0.8 * Math.random()*0.9;
+    sph(parent, 0.16,0.16,0.16, colors[i%colors.length],
+        cx + Math.cos(a)*r, 0.22, cz + Math.sin(a)*r, { cast:false });
+  }
+}
+function tree(parent, x, z){
+  cyl(parent, 0.32, 2.4, 0xB08A60, x, 1.2, z, { cast:true });
+  sph(parent, 1.7,1.5,1.7, C.green, x, 3.1, z);
+  sph(parent, 1.2,1.1,1.2, C.leaf2, x+0.8, 3.6, z-0.4);
+  sph(parent, 1.1,1.0,1.1, 0xCBE3BC, x-0.7, 3.3, z+0.5);
+}
+function bush(parent, x, z){
+  sph(parent, 0.9,0.7,0.9, C.green, x, 0.5, z);
+  sph(parent, 0.7,0.6,0.7, C.leaf2, x+0.5, 0.45, z+0.3);
+}
+function buildFence(parent){
+  const postMat = lambert(C.wood);
+  const fx = 24, fz = 22, step = 2.4;
+  function rail(x1,z1,x2,z2){
+    const horiz = Math.abs(x2-x1) > Math.abs(z2-z1);
+    const len = horiz ? Math.abs(x2-x1) : Math.abs(z2-z1);
+    box(parent, horiz?len:0.1, 0.12, horiz?0.1:len, C.wood, (x1+x2)/2, 0.85, (z1+z2)/2, {cast:false});
+    box(parent, horiz?len:0.1, 0.12, horiz?0.1:len, C.wood, (x1+x2)/2, 1.25, (z1+z2)/2, {cast:false});
+  }
+  for(let x=-fx; x<=fx; x+=step){ const m=new THREE.Mesh(G.box, postMat); m.scale.set(0.16,1.5,0.16); m.position.set(x,0.75,-fz); m.castShadow=true; parent.add(m);
+    const m2=m.clone(); m2.position.z=fz; parent.add(m2); }
+  for(let z=-fz; z<=fz; z+=step){ const m=new THREE.Mesh(G.box, postMat); m.scale.set(0.16,1.5,0.16); m.position.set(-fx,0.75,z); m.castShadow=true; parent.add(m);
+    const m2=m.clone(); m2.position.x=fx; parent.add(m2); }
+  rail(-fx,-fz,fx,-fz); rail(-fx,fz,fx,fz);
+  rail(-fx,-fz,-fx,fz); rail(fx,-fz,fx,fz);
+}
+
+const cat = new THREE.Group();
+const catBody = new THREE.Group();
+const catHead = new THREE.Group();
+const catTail = new THREE.Group();
+const legFL = new THREE.Group(), legFR = new THREE.Group(),
+      legBL = new THREE.Group(), legBR = new THREE.Group();
+
+function buildCat(){
+  const fur = lambert(C.fur);
+  cat.add(catBody);
+
+  sph(catBody, 0.55,0.46,0.78, C.fur, 0,0.55,0.1, { mat:fur });
+  sph(catBody, 0.5,0.42,0.5,  C.fur, 0,0.58,-0.45,{ mat:fur });
+  sph(catBody, 0.52,0.44,0.52, C.fur, 0,0.52,0.55, { mat:fur });
+  sph(catBody, 0.38,0.3,0.4,  C.fur, 0,0.36,-0.55,{ mat:fur });
+
+  function leg(grp, x, z){
+    grp.position.set(x, 0.34, z);
+    cyl(grp, 0.13, 0.34, C.fur, 0, -0.17, 0, { mat:fur });
+    sph(grp, 0.14,0.1,0.16, C.fur, 0, -0.34, 0.02, { mat:fur });
+    catBody.add(grp);
+  }
+  leg(legFL, -0.26, -0.45); leg(legFR, 0.26, -0.45);
+  leg(legBL, -0.28, 0.5);   leg(legBR, 0.28, 0.5);
+
+  catHead.position.set(0, 0.82, -0.62);
+  catBody.add(catHead);
+  sph(catHead, 0.42,0.4,0.4, C.fur, 0,0,0, { mat:fur });
+  sph(catHead, 0.22,0.18,0.2, C.fur, -0.2,-0.05,-0.28, { mat:fur });
+  sph(catHead, 0.22,0.18,0.2, C.fur,  0.2,-0.05,-0.28, { mat:fur });
+  cone(catHead, 0.2,0.36, C.fur, -0.24,0.36,0.02,{mat:fur}).rotation.z = 0.15;
+  cone(catHead, 0.2,0.36, C.fur,  0.24,0.36,0.02,{mat:fur}).rotation.z = -0.15;
+  cone(catHead, 0.1,0.2, C.nose, -0.24,0.34,0.1,{cast:false});
+  cone(catHead, 0.1,0.2, C.nose,  0.24,0.34,0.1,{cast:false});
+  sph(catHead, 0.075,0.1,0.06, C.eye, -0.16,0.02,-0.38,{cast:false});
+  sph(catHead, 0.075,0.1,0.06, C.eye,  0.16,0.02,-0.38,{cast:false});
+  sph(catHead, 0.025,0.025,0.02, 0xFFFFFF, -0.14,0.06,-0.42,{cast:false});
+  sph(catHead, 0.025,0.025,0.02, 0xFFFFFF,  0.18,0.06,-0.42,{cast:false});
+  sph(catHead, 0.06,0.05,0.05, C.nose, 0,-0.06,-0.42,{cast:false});
+  for(const sgn of [-1,1]){
+    for(const dy of [-0.02, 0.04]){
+      const w = cyl(catHead, 0.006, 0.5, 0xEAD9B8, sgn*0.32, -0.04+dy, -0.3, {cast:false});
+      w.rotation.z = Math.PI/2; w.rotation.y = sgn*0.4;
+    }
+  }
+
+  catTail.position.set(0, 0.55, 0.7);
+  catBody.add(catTail);
+  const seg = [ [0.16,0.0,0.15],[0.18,0.18,0.25],[0.2,0.4,0.3],[0.22,0.62,0.28],[0.26,0.82,0.18] ];
+  for(const [r,yy,zz] of seg){ sph(catTail, r,r,r, C.fur, 0, yy, zz, { mat:fur }); }
+
+  cat.position.set(0, groundY(0,-1.8) + PAW_OFFSET, -1.8);
+  cat.rotation.y = 0;
+  cat.scale.setScalar(0.6); // меньше — под размер дома
+  scene.add(cat);
+}
+
+const anim = { walkPhase:0, idle:0, action:'none', t:0, dur:0, heading:0, nextIdle:3 };
+function chooseIdle(){
+  const r = Math.random();
+  if(r < 0.4){ anim.action='sit';     anim.dur=3.4; }
+  else if(r < 0.75){ anim.action='wash'; anim.dur=4.2; }
+  else { anim.action='stretch'; anim.dur=2.6; }
+  anim.t = 0;
+}
+function envelope(t, dur){
+  const a = 0.18*dur, b = dur-0.18*dur;
+  if(t < a) return t/a;
+  if(t > b) return Math.max(0,(dur-t)/(dur*0.18));
+  return 1;
+}
+
+function updateCat(dt, moving){
+  let d = anim.heading - cat.rotation.y;
+  while(d > Math.PI) d -= Math.PI*2; while(d < -Math.PI) d += Math.PI*2;
+  cat.rotation.y += d * Math.min(1, dt*10);
+
+  catBody.position.set(0,0,0); catBody.rotation.set(0,0,0);
+  catHead.rotation.set(0,0,0);
+  legFL.rotation.set(0,0,0); legFR.rotation.set(0,0,0);
+  legBL.rotation.set(0,0,0); legBR.rotation.set(0,0,0);
+
+  const time = clock.elapsedTime;
+  catTail.rotation.x = -0.3 + Math.sin(time*2.2)*0.12;
+  catTail.rotation.z = Math.sin(time*1.7)*0.18;
+
+  if(moving){
+    anim.action='none'; anim.idle=0; anim.nextIdle = 2.5 + Math.random()*3;
+    anim.walkPhase += dt*9;
+    const bob = Math.sin(anim.walkPhase)*0.05;
+    catBody.position.y = Math.abs(Math.sin(anim.walkPhase))*0.045;
+    catBody.rotation.z = Math.sin(anim.walkPhase)*0.04;
+    legFL.rotation.x = Math.sin(anim.walkPhase)*0.5;
+    legBR.rotation.x = Math.sin(anim.walkPhase)*0.5;
+    legFR.rotation.x = Math.sin(anim.walkPhase+Math.PI)*0.5;
+    legBL.rotation.x = Math.sin(anim.walkPhase+Math.PI)*0.5;
+    catHead.rotation.x = bob*0.5;
+  } else {
+    anim.idle += dt;
+    if(anim.action==='none' && anim.idle > anim.nextIdle) chooseIdle();
+    if(anim.action!=='none'){
+      anim.t += dt;
+      const e = envelope(anim.t, anim.dur);
+      if(anim.action==='sit'){
+        catBody.rotation.x = -0.28*e;
+        catBody.position.y = -0.05*e;
+        legBL.rotation.x = 0.5*e; legBR.rotation.x = 0.5*e;
+      } else if(anim.action==='stretch'){
+        catBody.rotation.x = 0.32*e;
+        catBody.position.y = -0.06*e;
+        catBody.scale.z = 1 + 0.12*e;
+      } else if(anim.action==='wash'){
+        catBody.rotation.x = -0.25*e;
+        catBody.position.y = -0.05*e;
+        legFL.rotation.x = -1.3*e;
+        const lick = Math.sin(anim.t*7)*0.12*e;
+        catHead.rotation.x = (0.5)*e + lick;
+        catHead.rotation.z = 0.15*e;
+      }
+      if(anim.t >= anim.dur){ anim.action='none'; anim.idle=0; anim.nextIdle = 2.5+Math.random()*3; catBody.scale.z = 1; }
+    } else {
+      catBody.position.y = Math.sin(time*1.5)*0.012;
+    }
+  }
+}
+
+const noteObjs = [];
+let found = 0;
+
+function buildNotes(){
+  const paperMat = emissive(0xFFF3C8, C.glow, 1.1);
+  NOTES.forEach((n, i)=>{
+    const g = new THREE.Group();
+    g.position.set(n.pos[0], n.pos[1], n.pos[2]);
+    box(g, 0.34, 0.02, 0.26, 0xFFF3C8, 0,0,0, { mat:paperMat, cast:false });
+    box(g, 0.12, 0.02, 0.12, 0xFFE8A0, 0.09,0.012,0.05, { mat:paperMat, cast:false });
+    sph(g, 0.05,0.04,0.05, C.accent, 0,0.03,0, { cast:false });
+    const light = new THREE.PointLight(C.glow, 0.8, 3.2, 2);
+    light.position.set(0,0.2,0);
+    g.add(light);
+    scene.add(g);
+    noteObjs.push({ group:g, light, base:n.pos[1], collected:false, index:i, seed:i*1.7 });
+  });
+  updateCounter();
+}
+
+function updateNotes(dt){
+  const t = clock.elapsedTime;
+  for(const no of noteObjs){
+    if(no.collected) continue;
+    no.group.position.y = no.base + 0.12 + Math.sin(t*1.6 + no.seed)*0.1;
+    no.group.rotation.y += dt*0.8;
+    no.group.rotation.z = Math.sin(t*1.3 + no.seed)*0.12;
+    no.light.intensity = 0.7 + Math.sin(t*3 + no.seed)*0.2;
+  }
+}
+
+function checkPickup(){
+  if(state !== 'playing' || letterOpen) return;
+  for(const no of noteObjs){
+    if(no.collected) continue;
+    const dx = cat.position.x - no.group.position.x;
+    const dz = cat.position.z - no.group.position.z;
+    if(dx*dx + dz*dz < 1.6*1.6){ collectNote(no); break; }
+  }
+}
+
+function collectNote(no){
+  no.collected = true;
+  no.group.visible = false;
+  no.light.intensity = 0;
+  found++;
+  updateCounter();
+  playChime();
+  openLetter(NOTES[no.index].text);
+}
+
+function updateCounter(){
+  document.getElementById('counterText').textContent = 'Найдено ' + found + ' из ' + NOTES.length;
+}
+
+let letterOpen = false;
+const letterEl = document.getElementById('letter');
+function openLetter(text){
+  letterOpen = true;
+  document.getElementById('letterText').textContent = text;
+  const card = letterEl.querySelector('.letter-card');
+  card.style.animation = 'none'; void card.offsetWidth; card.style.animation = '';
+  letterEl.classList.add('show');
+}
+document.getElementById('letterClose').addEventListener('click', ()=>{
+  letterEl.classList.remove('show');
+  letterOpen = false;
+  if(found >= NOTES.length) startFinale();
+});
+
+let state = 'start';
+let cakeGroup = null, cakePop = 0;
+const candleLights = [];
+
+function startFinale(){
+  state = 'finale';
+  camDist = 3.6; camPitch = 0.5;
+  spawnCake();
+  startConfetti();
+  playFanfare();
+  document.getElementById('finaleTitle').textContent = FINALE.title;
+  document.getElementById('finaleAge').textContent = AGE;
+  document.getElementById('finaleText').innerHTML = FINALE.text.replace(/\n/g,'<br>');
+  const fin = document.getElementById('finale');
+  fin.classList.add('show');
+  setTimeout(()=> fin.classList.add('visible'), 1500);
+}
+
+function spawnCake(){
+  cakeGroup = new THREE.Group();
+  // ищем свободную точку рядом с котом: сперва прямо перед ним,
+  // затем по сторонам и ближе, чтобы торт не влез в мебель или стену
+  const CAKE_R = 0.85;
+  let px = cat.position.x, pz = cat.position.z, placed = false;
+  const angles = [0, Math.PI/4, -Math.PI/4, Math.PI/2, -Math.PI/2, Math.PI*3/4, -Math.PI*3/4, Math.PI];
+  outer:
+  for(const d of [1.7, 1.35, 1.1]){
+    for(const a of angles){
+      const tx = cat.position.x - Math.sin(cat.rotation.y + a)*d;
+      const tz = cat.position.z - Math.cos(cat.rotation.y + a)*d;
+      if(tx < WORLD.minX+1 || tx > WORLD.maxX-1 || tz < WORLD.minZ+1 || tz > WORLD.maxZ-1) continue;
+      if(!areaBlocked(tx, tz, CAKE_R)){ px = tx; pz = tz; placed = true; break outer; }
+    }
+  }
+  // ставим торт на уровень поверхности (пол дома выше земли во дворе)
+  cakeGroup.position.set(px, groundY(px, pz), pz);
+  cyl(cakeGroup, 0.9, 0.6, C.accent, 0,0.3,0, {});
+  cyl(cakeGroup, 0.9, 0.12, 0xFFF4DC, 0,0.66,0, {cast:false});
+  cyl(cakeGroup, 0.6, 0.45, 0xFFF4DC, 0,0.92,0, {});
+  for(let i=0;i<10;i++){ const a=i/10*Math.PI*2; sph(cakeGroup,0.1,0.13,0.1,0xFFF8E8,Math.cos(a)*0.6,0.72,Math.sin(a)*0.6,{cast:false}); }
+  for(const off of [0]){
+    cyl(cakeGroup, 0.04, 0.45, C.accent, off,1.35,0, {cast:false});
+    const flame = cone(cakeGroup, 0.07,0.16, 0xFFCC66, off,1.65,0, {cast:false});
+    flame.material = emissive(0xFFCC66, 0xFFA53C, 1.4);
+    const fl = new THREE.PointLight(0xFFB04A, 0.7, 3, 2);
+    fl.position.set(off,1.7,0); cakeGroup.add(fl); candleLights.push(fl);
+  }
+  const tex = makeTextTexture(String(AGE), '#FFF8E8', '#D97B57');
+  const plaque = new THREE.Mesh(new THREE.PlaneGeometry(0.7,0.35),
+                                new THREE.MeshBasicMaterial({ map:tex, transparent:true }));
+  plaque.position.set(0,1.35,0.62); cakeGroup.add(plaque);
+  cakeGroup.scale.setScalar(0.001);
+  scene.add(cakeGroup);
+  cakePop = 0;
+}
+
+function makeTextTexture(text, bg, fg){
+  const c = document.createElement('canvas'); c.width = 256; c.height = 128;
+  const x = c.getContext('2d');
+  x.fillStyle = bg; x.fillRect(0,0,256,128);
+  x.fillStyle = fg; x.font = "bold 96px Comfortaa, sans-serif";
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText(text, 128, 70);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  return t;
+}
+
+const confEl = document.getElementById('confetti');
+let confCtx, confParts = [], confRunning = false;
+function startConfetti(){
+  confEl.style.display = 'block';
+  confEl.width = window.innerWidth; confEl.height = window.innerHeight;
+  confCtx = confEl.getContext('2d');
+  const cols = ['#D97B57','#F7C5B4','#FFD27A','#B0BD98','#FFFDF7'];
+  confParts = [];
+  for(let i=0;i<160;i++){
+    confParts.push({
+      x:Math.random()*confEl.width, y:Math.random()*-confEl.height,
+      r:4+Math.random()*5, c:cols[(Math.random()*cols.length)|0],
+      vy:1.5+Math.random()*2.5, vx:(Math.random()-0.5)*1.2,
+      a:Math.random()*Math.PI, va:(Math.random()-0.5)*0.2
+    });
+  }
+  confRunning = true;
+}
+function drawConfetti(){
+  if(!confRunning) return;
+  confCtx.clearRect(0,0,confEl.width,confEl.height);
+  for(const p of confParts){
+    p.y += p.vy; p.x += p.vx; p.a += p.va;
+    if(p.y > confEl.height + 20){ p.y = -20; p.x = Math.random()*confEl.width; }
+    confCtx.save(); confCtx.translate(p.x,p.y); confCtx.rotate(p.a);
+    confCtx.fillStyle = p.c; confCtx.fillRect(-p.r/2,-p.r/2,p.r,p.r*1.6);
+    confCtx.restore();
+  }
+}
+
+let audioCtx = null, masterGain = null, musicGain = null;
+let volume = 0.40, muted = false;
+function ensureAudio(){
+  if(audioCtx) return;
+  try{
+    audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = muted ? 0 : volume;
+    masterGain.connect(audioCtx.destination);
+    musicGain = audioCtx.createGain();
+    musicGain.gain.value = 0.6;
+    musicGain.connect(masterGain);
+  }catch(e){}
+}
+function setVolume(v){
+  volume = Math.max(0, Math.min(1, v));
+  if(masterGain) masterGain.gain.setTargetAtTime(muted?0:volume, audioCtx.currentTime, 0.05);
+}
+function setMuted(m){
+  muted = m;
+  if(masterGain) masterGain.gain.setTargetAtTime(muted?0:volume, audioCtx.currentTime, 0.05);
+}
+
+// --- короткие звуки (записка / фанфары) ---
+function tone(freq, t0, dur, vol){
+  if(!audioCtx) return;
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = 'sine'; o.frequency.value = freq;
+  o.connect(g); g.connect(masterGain);
+  const t = audioCtx.currentTime + t0;
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(vol, t+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+  o.start(t); o.stop(t+dur+0.05);
+}
+function playChime(){ ensureAudio(); tone(659,0,0.5,0.16); tone(880,0.08,0.5,0.13); }
+function playFanfare(){ ensureAudio(); [523,659,784,1047].forEach((f,i)=>tone(f, i*0.12, 0.9, 0.14)); }
+
+/* ---------- ФОНОВАЯ LO-FI МЕЛОДИЯ (генерируется на лету) ---------- */
+const BPM = 74, SPB = 60/BPM;
+function mtof(m){ return 440*Math.pow(2,(m-69)/12); }
+// тёплая петля аккордов: Fmaj7 – Am7 – Dm7 – Cmaj7
+const PROG = [ [53,57,60,64], [57,60,64,67], [50,53,57,60], [48,52,55,59] ];
+let lofiOn = false, lofiTimer = null, nextNoteTime = 0, step = 0;
+
+let _noise = null;
+function noiseBuf(){
+  if(_noise) return _noise;
+  const len = Math.floor(audioCtx.sampleRate*1.0);
+  const b = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+  const d = b.getChannelData(0);
+  for(let i=0;i<len;i++) d[i] = Math.random()*2-1;
+  _noise = b; return _noise;
+}
+function playPad(notes, t, dur){
+  notes.forEach((n,i)=>{
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    const lp = audioCtx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value = 1100;
+    o.type = (i%2) ? 'sine' : 'triangle';
+    o.frequency.value = mtof(n + (i===3?12:0));
+    o.detune.value = Math.random()*8-4;
+    o.connect(lp); lp.connect(g); g.connect(musicGain);
+    const peak = 0.045;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(peak, t+0.6);
+    g.gain.setValueAtTime(peak, t+dur-0.7);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.start(t); o.stop(t+dur+0.05);
+  });
+}
+function playBass(midi, t, dur){
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type='sine'; o.frequency.value = mtof(midi-12);
+  o.connect(g); g.connect(musicGain);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.11, t+0.03);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+  o.start(t); o.stop(t+dur+0.05);
+}
+function playKick(t){
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type='sine';
+  o.frequency.setValueAtTime(115, t);
+  o.frequency.exponentialRampToValueAtTime(45, t+0.12);
+  o.connect(g); g.connect(musicGain);
+  g.gain.setValueAtTime(0.16, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+0.18);
+  o.start(t); o.stop(t+0.22);
+}
+function playHat(t){
+  const src = audioCtx.createBufferSource(); src.buffer = noiseBuf();
+  const hp = audioCtx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=7000;
+  const g = audioCtx.createGain();
+  src.connect(hp); hp.connect(g); g.connect(musicGain);
+  g.gain.setValueAtTime(0.035, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+0.05);
+  src.start(t); src.stop(t+0.07);
+}
+let crackleStarted = false;
+function startCrackle(){
+  if(crackleStarted) return; crackleStarted = true;
+  const src = audioCtx.createBufferSource(); src.buffer = noiseBuf(); src.loop = true;
+  const bp = audioCtx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=3200; bp.Q.value=0.6;
+  const g = audioCtx.createGain(); g.gain.value = 0.014; // едва слышный «винил»
+  src.connect(bp); bp.connect(g); g.connect(musicGain);
+  src.start();
+}
+function lofiScheduler(){
+  if(!audioCtx) return;
+  while(nextNoteTime < audioCtx.currentTime + 0.16){
+    const beat = step % 4;
+    const bar  = Math.floor(step/4) % PROG.length;
+    const chord = PROG[bar];
+    if(beat===0) playPad(chord, nextNoteTime, SPB*4);
+    if(beat===0 || beat===2){ playBass(chord[0], nextNoteTime, SPB*0.95); playKick(nextNoteTime); }
+    playHat(nextNoteTime + SPB*0.5);
+    nextNoteTime += SPB; step++;
+  }
+}
+function startLoFi(){
+  ensureAudio(); if(!audioCtx || lofiOn) return;
+  lofiOn = true;
+  startCrackle();
+  nextNoteTime = audioCtx.currentTime + 0.12; step = 0;
+  lofiTimer = setInterval(lofiScheduler, 25);
+}
+
+// --- регулятор громкости ---
+(function wireVolume(){
+  const volSlider = document.getElementById('volSlider');
+  const muteBtn = document.getElementById('muteBtn');
+  volume = volSlider.value/100;
+  volSlider.addEventListener('input', ()=>{
+    const v = volSlider.value/100;
+    setVolume(v);
+    if(v>0 && muted){ muted=false; muteBtn.textContent='🔊'; }
+    if(v===0){ muteBtn.textContent='🔇'; }
+  });
+  muteBtn.addEventListener('click', ()=>{
+    ensureAudio(); if(audioCtx && audioCtx.state==='suspended') audioCtx.resume();
+    setMuted(!muted);
+    muteBtn.textContent = muted ? '🔇' : '🔊';
+  });
+})();
+
+const keys = {};
+const input = { x:0, z:0 };
+let camYaw = 0, camPitch = 0.4, camDist = 2.0;
+
+const isTouch = window.matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window);
+
+addEventListener('keydown', e=>{ keys[e.code]=true; if(e.code.startsWith('Arrow')) e.preventDefault(); });
+addEventListener('keyup',   e=>{ keys[e.code]=false; });
+
+let dragId = null, lastX=0, lastY=0;
+function onPointerDown(e){
+  if(letterEl.classList.contains('show')) return;
+  if(e.target.closest('#joystick') || e.target.closest('.btn') || e.target.closest('#start') || e.target.closest('#audioCtrl')) return;
+  dragId = e.pointerId; lastX = e.clientX; lastY = e.clientY;
+}
+function onPointerMove(e){
+  if(e.pointerId !== dragId) return;
+  const dx = e.clientX - lastX, dy = e.clientY - lastY;
+  lastX = e.clientX; lastY = e.clientY;
+  camYaw -= dx * 0.005;
+  camPitch = Math.min(0.95, Math.max(0.12, camPitch + dy*0.004));
+}
+function onPointerUp(e){ if(e.pointerId === dragId) dragId = null; }
+addEventListener('pointerdown', onPointerDown);
+addEventListener('pointermove', onPointerMove);
+addEventListener('pointerup', onPointerUp);
+addEventListener('pointercancel', onPointerUp);
+
+addEventListener('wheel', e=>{ camDist = Math.min(6, Math.max(1.2, camDist + Math.sign(e.deltaY)*0.6)); }, {passive:true});
+
+const joyEl = document.getElementById('joystick'), joyKnob = document.getElementById('joyKnob');
+let joyId = null;
+const joy = { x:0, z:0 };
+if(isTouch) joyEl.classList.add('on');
+function joyStart(e){ joyId = e.pointerId; joyEl.setPointerCapture(e.pointerId); joyMove(e); }
+function joyMove(e){
+  if(e.pointerId !== joyId) return;
+  const r = joyEl.getBoundingClientRect();
+  let dx = e.clientX - (r.left + r.width/2);
+  let dy = e.clientY - (r.top + r.height/2);
+  const max = r.width/2;
+  const len = Math.hypot(dx,dy) || 1;
+  if(len > max){ dx = dx/len*max; dy = dy/len*max; }
+  joyKnob.style.transform = `translate(${dx}px,${dy}px)`;
+  joy.x = dx/max; joy.z = dy/max;
+}
+function joyEnd(e){ if(e.pointerId!==joyId) return; joyId=null; joy.x=0; joy.z=0; joyKnob.style.transform='translate(0,0)'; }
+joyEl.addEventListener('pointerdown', joyStart);
+joyEl.addEventListener('pointermove', joyMove);
+joyEl.addEventListener('pointerup', joyEnd);
+joyEl.addEventListener('pointercancel', joyEnd);
+
+function gatherInput(){
+  let ix = 0, iz = 0;
+  if(keys['KeyW']||keys['ArrowUp'])    iz -= 1;
+  if(keys['KeyS']||keys['ArrowDown'])  iz += 1;
+  if(keys['KeyA']||keys['ArrowLeft'])  ix -= 1;
+  if(keys['KeyD']||keys['ArrowRight']) ix += 1;
+  ix += joy.x; iz += joy.z;
+  const len = Math.hypot(ix,iz);
+  if(len > 1){ ix/=len; iz/=len; }
+  input.x = ix; input.z = iz;
+}
+
+/* высота поверхности под точкой (x,z):
+   пол дома — плита толщиной 0.1 (верх на 0.05), во дворе земля на ~0 */
+function groundY(x, z){
+  if(x > -10 && x < 10 && z > -8 && z < 8) return 0.06; // внутри дома (пол + ковры)
+  if(x > -1.1 && x < 1.1 && z > 8 && z < 18.5) return 0.03;       // садовая дорожка (юг)
+  if(x > 10.5 && x < 20.5 && z > -5 && z < -3) return 0.03;       // садовая дорожка (восток)
+  return 0; // газон
+}
+const CAT_R = 0.34, SPEED = 4.4;
+const PAW_OFFSET = 0.06; // лапы кота опускаются на 0.06 ниже точки cat.position
+function circleHitsBox(cx,cz, b, r=CAT_R){
+  const nx = Math.max(b.minX, Math.min(cx, b.maxX));
+  const nz = Math.max(b.minZ, Math.min(cz, b.maxZ));
+  const dx = cx-nx, dz = cz-nz;
+  return dx*dx + dz*dz < r*r;
+}
+function blocked(x, z){
+  for(const b of colliders){ if(circleHitsBox(x,z,b)) return true; }
+  return false;
+}
+function areaBlocked(x, z, r){
+  for(const b of colliders){ if(circleHitsBox(x,z,b,r)) return true; }
+  return false;
+}
+function resolveCollisions(){
+  for(const b of colliders){
+    const nx = Math.max(b.minX, Math.min(cat.position.x, b.maxX));
+    const nz = Math.max(b.minZ, Math.min(cat.position.z, b.maxZ));
+    let dx = cat.position.x - nx, dz = cat.position.z - nz;
+    const d2 = dx*dx + dz*dz;
+    if(d2 < CAT_R*CAT_R){
+      if(d2 > 1e-6){
+        const d = Math.sqrt(d2), push = CAT_R - d;
+        cat.position.x += (dx/d)*push;
+        cat.position.z += (dz/d)*push;
+      } else {
+        const toL = cat.position.x - b.minX, toR = b.maxX - cat.position.x;
+        const toB = cat.position.z - b.minZ, toT = b.maxZ - cat.position.z;
+        const m = Math.min(toL,toR,toB,toT);
+        if(m===toL) cat.position.x = b.minX - CAT_R;
+        else if(m===toR) cat.position.x = b.maxX + CAT_R;
+        else if(m===toB) cat.position.z = b.minZ - CAT_R;
+        else cat.position.z = b.maxZ + CAT_R;
+      }
+    }
+  }
+  cat.position.x = Math.min(WORLD.maxX, Math.max(WORLD.minX, cat.position.x));
+  cat.position.z = Math.min(WORLD.maxZ, Math.max(WORLD.minZ, cat.position.z));
+}
+
+function moveCat(dt){
+  let moving = false;
+  if(state==='playing' && !letterOpen && (input.x||input.z)){
+    const fwdX = -Math.sin(camYaw), fwdZ = -Math.cos(camYaw);
+    const rgtX =  Math.cos(camYaw), rgtZ = -Math.sin(camYaw);
+    let mx = fwdX*(-input.z) + rgtX*(input.x);
+    let mz = fwdZ*(-input.z) + rgtZ*(input.x);
+    const len = Math.hypot(mx,mz);
+    if(len > 0.001){
+      mx/=len; mz/=len;
+      anim.heading = Math.atan2(-mx, -mz);
+      const stepX = mx*SPEED*dt, stepZ = mz*SPEED*dt;
+      let nx = cat.position.x + stepX;
+      if(!blocked(nx, cat.position.z)) cat.position.x = nx;
+      let nz = cat.position.z + stepZ;
+      if(!blocked(cat.position.x, nz)) cat.position.z = nz;
+      cat.position.x = Math.min(WORLD.maxX, Math.max(WORLD.minX, cat.position.x));
+      cat.position.z = Math.min(WORLD.maxZ, Math.max(WORLD.minZ, cat.position.z));
+      moving = true;
+    }
+  }
+  resolveCollisions();
+  // привязка кота к поверхности: не даём лапам уходить под пол/землю
+  const gy = groundY(cat.position.x, cat.position.z) + PAW_OFFSET;
+  cat.position.y += (gy - cat.position.y) * Math.min(1, dt*12);
+  updateCat(dt, moving);
+}
+
+const camTarget = new THREE.Vector3();
+function cameraBlocked(x,z){
+  const R = 0.28;
+  for(const b of wallColliders){
+    const nx = Math.max(b.minX, Math.min(x, b.maxX));
+    const nz = Math.max(b.minZ, Math.min(z, b.maxZ));
+    const dx = x-nx, dz = z-nz;
+    if(dx*dx + dz*dz < R*R) return true;
+  }
+  return false;
+}
+function clampCameraToWalls(tx,tz, px,pz){
+  const steps = 12; let safe = 1;
+  for(let i=1;i<=steps;i++){
+    const f = i/steps;
+    if(cameraBlocked(tx+(px-tx)*f, tz+(pz-tz)*f)){ safe = (i-1)/steps; break; }
+  }
+  return safe;
+}
+function updateCamera(dt){
+  if(state==='playing' && !letterOpen && dragId===null && (input.x||input.z)){
+    let d = cat.rotation.y - camYaw;
+    while(d > Math.PI) d -= Math.PI*2; while(d < -Math.PI) d += Math.PI*2;
+    camYaw += d * Math.min(1, dt*2.2);
+  }
+  if(state==='finale') camYaw += dt*0.12;
+
+  const cp = Math.cos(camPitch), sp = Math.sin(camPitch);
+  let ox = Math.sin(camYaw)*cp*camDist;
+  let oz = Math.cos(camYaw)*cp*camDist;
+  let oy = sp*camDist;
+
+  const tx = cat.position.x, ty = 0.72, tz = cat.position.z;
+
+  const safe = clampCameraToWalls(tx, tz, tx+ox, tz+oz);
+  ox *= safe; oz *= safe;
+
+  let camX = tx+ox, camY = ty+oy, camZ = tz+oz;
+
+  if(camX > -10.4 && camX < 10.4 && camZ > -8.4 && camZ < 8.4){
+    camY = Math.min(camY, WALL_H - 0.2);
+  }
+  camY = Math.max(camY, 0.42);
+
+  camTarget.set(tx, ty, tz);
+  const desired = new THREE.Vector3(camX, camY, camZ);
+  camera.position.lerp(desired, Math.min(1, dt*7));
+  camera.lookAt(camTarget);
+}
+
+function onResize(){
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  if(confEl.style.display==='block'){ confEl.width=window.innerWidth; confEl.height=window.innerHeight; }
+}
+addEventListener('resize', onResize);
+
+function loop(){
+  const dt = Math.min(0.05, clock.getDelta());
+  gatherInput();
+  moveCat(dt);
+  updateNotes(dt);
+  checkPickup();
+  updateCamera(dt);
+
+  if(cakeGroup && cakePop < 1){
+    cakePop = Math.min(1, cakePop + dt*1.6);
+    const s = 1 - Math.pow(1-cakePop, 3);
+    cakeGroup.scale.setScalar(0.001 + s*0.8);
+  }
+  if(candleLights.length){
+    const f = 0.5 + Math.sin(clock.elapsedTime*9)*0.15 + Math.random()*0.05;
+    for(const l of candleLights) l.intensity = f;
+  }
+  if(balloonGroups.length){
+    const t = clock.elapsedTime;
+    for(const g of balloonGroups){
+      const p = g.userData.phase || 0;
+      g.rotation.z = Math.sin(t*0.9 + p)*0.05;
+      g.rotation.x = Math.cos(t*0.7 + p)*0.04;
+    }
+  }
+
+  // живой двор: бабочки, светлячки, дрейф облаков
+  const tg = clock.elapsedTime;
+  updateButterflies(tg);
+  updateFireflies(tg);
+  for(const cl of clouds) cl.g.position.x = cl.x0 + Math.sin(tg*cl.sp)*4;
+
+  drawConfetti();
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(loop);
+}
+
+function buildWorld(){
+  initThree();
+  buildSky();
+  buildHouse();
+  buildRoof();
+  buildGarden();
+  buildCat();
+  buildNotes();
+  makeButterflies();
+  makeFireflies();
+
+  camYaw = cat.rotation.y;
+  camera.position.set(cat.position.x, 1.6, cat.position.z + 2.0);
+  camera.lookAt(cat.position.x, 0.72, cat.position.z);
+}
+
+function fillStartTexts(){
+  document.getElementById('startName').textContent = 'Прогулка с Михоном';
+  document.getElementById('startCtrls').innerHTML = isTouch
+    ? 'Управление: джойстик слева - ходить · палец по экрану - осмотреться'
+    : 'Управление: W A S D / стрелки - ходить · мышь (зажать) - осмотреться · колесо - приблизить';
+  document.getElementById('hint').innerHTML = isTouch
+    ? 'Джойстик - ходить · палец - камера'
+    : 'WASD - ходить · мышь - камера · колесо - зум';
+}
+
+function startGame(){
+  ensureAudio();
+  if(audioCtx && audioCtx.state==='suspended') audioCtx.resume();
+  startLoFi();
+  document.getElementById('start').classList.add('hide');
+  state = 'playing';
+}
+
+window.addEventListener('load', ()=>{
+  try{
+    buildWorld();
+  }catch(err){
+    console.error(err);
+    document.getElementById('webglError').style.display = 'flex';
+    return;
+  }
+  fillStartTexts();
+  updateCounter();
+  document.getElementById('startBtn').addEventListener('click', startGame);
+  document.getElementById('restartBtn').addEventListener('click', ()=> location.reload());
+  loop();
+});
+</script>
+</body>
+</html>
