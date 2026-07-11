@@ -1330,6 +1330,10 @@ function drawConfetti(){
 }
 
 let audioCtx = null, masterGain = null, musicGain = null;
+let music = null;
+function applyMusicVolume(){
+  if(music) music.volume = muted ? 0 : volume;
+}
 let volume = 0.40, muted = false;
 function ensureAudio(){
   if(audioCtx) return;
@@ -1343,13 +1347,16 @@ function ensureAudio(){
     musicGain.connect(masterGain);
   }catch(e){}
 }
+
 function setVolume(v){
   volume = Math.max(0, Math.min(1, v));
   if(masterGain) masterGain.gain.setTargetAtTime(muted?0:volume, audioCtx.currentTime, 0.05);
+  applyMusicVolume();
 }
 function setMuted(m){
   muted = m;
   if(masterGain) masterGain.gain.setTargetAtTime(muted?0:volume, audioCtx.currentTime, 0.05);
+  applyMusicVolume();
 }
 
 // --- короткие звуки (записка / фанфары) ---
@@ -1449,11 +1456,17 @@ function lofiScheduler(){
   }
 }
 function startLoFi(){
-  ensureAudio(); if(!audioCtx || lofiOn) return;
-  lofiOn = true;
-  startCrackle();
-  nextNoteTime = audioCtx.currentTime + 0.12; step = 0;
-  lofiTimer = setInterval(lofiScheduler, 25);
+//   // ensureAudio(); if(!audioCtx || lofiOn) return;
+//   // lofiOn = true;
+//   // startCrackle();
+//   // nextNoteTime = audioCtx.currentTime + 0.12; step = 0;
+//   // lofiTimer = setInterval(lofiScheduler, 25);
+  if(!music){
+    music = new Audio('C418_-_Subwoofer_Lullaby_-_Minecraft_(SkySound.cc).mp3');
+    music.loop = true;
+  } 
+  applyMusicVolume();
+  music.play();
 }
 
 // --- регулятор громкости ---
